@@ -62,4 +62,6 @@ int my_free(Addr _a);
 /* Frees the section of physical memory previously allocated
    using ’my_malloc’. Returns 0 if everything ok. */
 
+int test_init();
+int test_release();
 #endif

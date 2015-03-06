@@ -106,7 +106,7 @@ extern int my_free(Addr _a) {
 /* UnitTests */
 /*--------------------------------------------------------------------------*/
 
-int testInit(){
+int test_init(){
 
   init_allocator(4, 8);
   if(memory_pool==NULL){return 0;}
@@ -122,7 +122,7 @@ int testInit(){
   return 1;
 }
 
-int testRelease(){
+int test_release(){
   int success = (int)release_allocator();
   if(memory_pool != NULL){
     success = 0;

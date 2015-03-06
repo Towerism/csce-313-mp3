@@ -6,8 +6,8 @@
 
 int main() {
   //if an assert fails, it'll print and throw an abort
-  assert(testInit() == 1);
-  assert(testRelease() == 1);
-  printf("Unit Tests have been run successfully");
+  assert(test_init() == 1);
+  assert(test_release() == 1);
+  printf("Unit Tests have been run successfully\n");
   return 1;
 }
