@@ -98,18 +98,31 @@ struct Node* list_remove(struct Linked_list* list, struct Node* node) {
 /* UnitTests */
 /*--------------------------------------------------------------------------*/
 
-// if any subtest fails, the entire test will fail
-int test_list() {
-    int success = 1;
-    struct Linked_list list = list_create();
+// helper function
+void populate_test_list(struct Linked_list* list, int* array) {
+    int i;
+    for (i = 0; i < 3; ++i) {
+        list_push(list, array + i, 0);
+    }
+}
+
+// helper function
+int* init_test_array() {
     int* array = (int*)malloc(sizeof(int) * 3);
     int i;
     for (i = 0; i < 3; ++i) {
         array[i] = i;
-        list_push(&list, array + i, 0);
-    }
+    }    
+    return array;
+}
+
+int test_list_push() {
+    int success = 1;
+    struct Linked_list list = list_create();
+    int* array = init_test_array();
+    populate_test_list(&list, array);
     struct Node* node = list.root;
-    i = 0;
+    int i = 0;
     // test that list_push worked correctly by
         // checking that forward iteration works correctly
     while (node != NULL) {
@@ -124,17 +137,31 @@ int test_list() {
         --i;
         node = node->prev;
     }
+    return success;
+}
+
+int test_list_pop() {
+    int success = 1;
+    struct Linked_list list = list_create();
+    int* array = init_test_array();
+    populate_test_list(&list, array);
+    struct Node* node = list.root;
     // test list_pop
+    int i = 0;
     for (i = 2; i >= 0; --i) {
         struct Node* node = list_pop(&list);
         success &= (*(int*)node->ptr == i);
     }
     // make sure we have a list which is empty
     success &= (list.root == NULL && list.tail == NULL);
-    // populate the list again so we can test remove
-    for (i = 0; i < 3; ++i) {
-        list_push(&list, array + i, 0);
-    }
+    return success;
+}
+
+int test_list_remove() {
+    int success = 1;
+    struct Linked_list list = list_create();
+    int* array = init_test_array(); // { 0, 1, 2 }
+    populate_test_list(&list, array);
     // test remove on a non-root, non-tail node
     list_remove(&list, list.root->next);
     success &= (*(int*)list.tail->ptr == 2 && *(int*)list.root->ptr == 0);
@@ -144,4 +171,3 @@ int test_list() {
     success &= *(int*)list.root->ptr == 2;
     return success;
 }
-

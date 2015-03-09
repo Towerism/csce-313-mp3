@@ -75,5 +75,7 @@ struct Node* list_remove(struct Linked_list* list, struct Node* node);
 /* UnitTests */
 /*--------------------------------------------------------------------------*/
 
-    int test_list(); 
+    int test_list_push();
+    int test_list_pop();
+    int test_list_remove();
 #endif
