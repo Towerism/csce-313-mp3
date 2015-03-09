@@ -39,7 +39,6 @@ struct Node {
 	Addr ptr;
 	struct Node* next;
 	struct Node* prev;
-	int spacing; // the amount of space ptr points to;
 };
 
 struct Linked_list {
@@ -66,13 +65,16 @@ struct Linked_list list_create();
 void list_destroy(struct Linked_list* list);
 
 // constructs a node and pushes it onto list
-struct Node* list_push(struct Linked_list* list, Addr ptr, int spacing);
+Addr list_push(struct Linked_list* list, Addr ptr);
 
 // removes and returns the last node in the list
-struct Node* list_pop(struct Linked_list* list);
+Addr list_pop(struct Linked_list* list);
+
+// constructs a node and inserts it after the given node
+Addr list_insert_after(struct Linked_list* list, struct Node* node, Addr ptr);
 
 // removes the node from the list
-struct Node* list_remove(struct Linked_list* list, struct Node* node);
+Addr list_remove(struct Linked_list* list, struct Node* node);
 
 /*--------------------------------------------------------------------------*/
 /* UnitTests */
