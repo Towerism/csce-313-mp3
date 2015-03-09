@@ -51,6 +51,14 @@ struct Linked_list list_create() {
     return list;
 }
 
+void list_destroy(struct Linked_list* list) {
+    struct Node* node;
+    while (list->size > 0) {
+        node = list_pop(list);
+        free(node);
+    }
+}
+
 struct Node* list_push(struct Linked_list* list, Addr ptr, int spacing) {
     struct Node* new_node = malloc(sizeof(struct Node));
     ++list->size;
@@ -137,6 +145,8 @@ int test_list_push() {
         --i;
         node = node->prev;
     }
+    list_destroy(&list);
+    free(array);
     return success;
 }
 
@@ -154,6 +164,8 @@ int test_list_pop() {
     }
     // make sure we have a list which is empty
     success &= (list.root == NULL && list.tail == NULL);
+    list_destroy(&list);
+    free(array);
     return success;
 }
 
@@ -169,5 +181,7 @@ int test_list_remove() {
     list_remove(&list, list.root);
     success &= list.size == 1 && list.root != NULL;
     success &= *(int*)list.root->ptr == 2;
+    list_destroy(&list);
+    free(array);
     return success;
 }

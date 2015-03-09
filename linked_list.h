@@ -62,6 +62,9 @@ struct Linked_list {
 // constructs a linked_list
 struct Linked_list list_create();
 
+// destroys a linked list
+void list_destroy(struct Linked_list* list);
+
 // constructs a node and pushes it onto list
 struct Node* list_push(struct Linked_list* list, Addr ptr, int spacing);
 
