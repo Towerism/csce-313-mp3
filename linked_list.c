@@ -70,7 +70,7 @@ struct Node* list_push(struct Linked_list* list, Addr ptr, int spacing) {
         list->tail->next = new_node;
         new_node->next = NULL;
         new_node->prev = list->tail;
-        list->tail = new_node;
+        list->tail = new_node;*(int*)list.root->ptr == 0*(int*)list.root->ptr == 0
     }
     new_node->ptr = ptr;
     new_node->spacing = spacing;
@@ -127,7 +127,7 @@ int* init_test_array() {
 int test_list_push() {
     int success = 1;
     struct Linked_list list = list_create();
-    int* array = init_test_array();
+    int* array = init_test_array(); // { 0, 1, 2 }
     populate_test_list(&list, array);
     struct Node* node = list.root;
     int i = 0;
@@ -153,7 +153,7 @@ int test_list_push() {
 int test_list_pop() {
     int success = 1;
     struct Linked_list list = list_create();
-    int* array = init_test_array();
+    int* array = init_test_array(); // { 0, 1, 2 }
     populate_test_list(&list, array);
     struct Node* node = list.root;
     // test list_pop
