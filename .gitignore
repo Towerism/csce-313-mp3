@@ -4,6 +4,9 @@
 *.obj
 *.elf
 
+# vim swap files
+*.swp
+
 # Libraries
 *.lib
 *.a
