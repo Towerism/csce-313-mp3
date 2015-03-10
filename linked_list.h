@@ -32,15 +32,15 @@ typedef void* Addr;
 /* This Node struct represents a node in a linked list.
 */
 struct Node {
-	Addr ptr;
-	struct Node* next;
-	struct Node* prev;
+    struct Node* next;
+    struct Node* prev;
 };
 
 struct Linked_list {
     struct Node* head;
     struct Node* tail;
-    int size;
+    int block_size;
+    struct Node* memory_pool;
 };
 
 /*--------------------------------------------------------------------------*/
@@ -54,42 +54,27 @@ struct Linked_list {
 /* FUNCTIONS FOR MODULE LINKED_LIST */
 /*--------------------------------------------------------------------------*/
 
+// Returns the data block that the node points to.
+// The data block is located right after a node struct in the 
+// memory pool.
+Addr node_value(struct Node* node);
+
 // constructs a linked_list
-struct Linked_list list_create();
+struct Linked_list list_create(int data_size, int blocks);
 
 // destroys a linked list
 void list_destroy(struct Linked_list* list);
 
-// constructs a node and inserts it at the beginning of the list
-Addr list_push_front(struct Linked_list* list, Addr ptr);
-
 // constructs a node and inserts it at the end of the list
-Addr list_push_back(struct Linked_list* list, Addr ptr);
-
-// removes and returs the first node in the list
-Addr list_pop_front(struct Linked_list* list);
-
-// removes and returns the last node in the list
-Addr list_pop_back(struct Linked_list* list);
-
-//constructs a node and inserts it before the given node
-Addr list_insert_before(struct Linked_list* list, struct Node* node, Addr ptr);
-
-// constructs a node and inserts it after the given node
-Addr list_insert_after(struct Linked_list* list, struct Node* node, Addr ptr);
+int list_insert(struct Linked_list* list, Addr ptr, int len);
 
 // removes the node from the list
-Addr list_remove(struct Linked_list* list, struct Node* node);
+int list_remove(struct Linked_list* list, struct Node* node);
 
 /*--------------------------------------------------------------------------*/
 /* UnitTests */
 /*--------------------------------------------------------------------------*/
 
-int test_list_push_front();
-int test_list_push_back();
-int test_list_pop_front();
-int test_list_pop_back();
-int test_list_insert_before();
-int test_list_insert_after();
+int test_list_insert();
 int test_list_remove();
 #endif
