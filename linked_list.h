@@ -64,11 +64,20 @@ struct Linked_list list_create();
 // destroys a linked list
 void list_destroy(struct Linked_list* list);
 
-// constructs a node and pushes it onto list
-Addr list_push(struct Linked_list* list, Addr ptr);
+// constructs a node and inserts it at the beginning of the list
+Addr list_push_front(struct Linked_list* list, Addr ptr);
+
+// constructs a node and inserts it at the end of the list
+Addr list_push_back(struct Linked_list* list, Addr ptr);
+
+// removes and returs the first node in the list
+Addr list_pop_front(struct Linked_list* list);
 
 // removes and returns the last node in the list
-Addr list_pop(struct Linked_list* list);
+Addr list_pop_back(struct Linked_list* list);
+
+//constructs a node and inserts it before the given node
+Addr list_insert_before(struct Linked_list* list, struct Node* node, Addr ptr);
 
 // constructs a node and inserts it after the given node
 Addr list_insert_after(struct Linked_list* list, struct Node* node, Addr ptr);
@@ -80,7 +89,11 @@ Addr list_remove(struct Linked_list* list, struct Node* node);
 /* UnitTests */
 /*--------------------------------------------------------------------------*/
 
-    int test_list_push();
-    int test_list_pop();
+    int test_list_push_front();
+    int test_list_push_back();
+    int test_list_pop_front();
+    int test_list_pop_back();
+    int test_list_insert_before();
+    int test_list_insert_after();
     int test_list_remove();
 #endif

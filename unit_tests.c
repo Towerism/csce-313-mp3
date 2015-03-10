@@ -13,8 +13,11 @@ int main() {
   assert(test_release() == 1);
 
   // test linked list functions
-  assert(test_list_push() == 1);
-  assert(test_list_pop() == 1);
+  assert(test_list_push_front() == 1);
+  assert(test_list_push_back() == 1);
+  assert(test_list_pop_front() == 1);
+  assert(test_list_pop_back() == 1);
+  assert(test_list_insert_before() == 1);
   assert(test_list_insert_after() == 1);
   assert(test_list_remove() == 1);
   printf("Unit Tests have been run successfully\n");
