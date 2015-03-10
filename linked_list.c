@@ -45,8 +45,8 @@
 
 struct Linked_list list_create() {
     struct Linked_list list;
-    list.root = NULL;
-    list.tail = list.root;
+    list.head = NULL;
+    list.tail = list.head;
     list.size = 0;
     return list;
 }
@@ -58,12 +58,12 @@ void list_destroy(struct Linked_list* list) {
 }
 
 Addr list_push_front(struct Linked_list* list, Addr ptr) {
-    if (list->root != NULL) {
-        return list_insert_before(list, list->root, ptr);
+    if (list->head != NULL) {
+        return list_insert_before(list, list->head, ptr);
     }
     struct Node* new_node = malloc(sizeof(struct Node));
     ++list->size;
-    list->root = list->tail = new_node;
+    list->head = list->tail = new_node;
     new_node->next = new_node->prev = NULL;
     new_node->ptr = ptr;
     return ptr;
@@ -77,10 +77,10 @@ Addr list_push_back(struct Linked_list* list, Addr ptr) {
 }
 
 Addr list_pop_front(struct Linked_list* list) {
-    if (list->root == NULL) {
+    if (list->head == NULL) {
         return NULL;
     }
-    return list_remove(list, list->root);
+    return list_remove(list, list->head);
 }
 
 Addr list_pop_back(struct Linked_list* list) {
@@ -95,8 +95,8 @@ Addr list_insert_before(struct Linked_list* list, struct Node* node, Addr ptr) {
     ++list->size;
     new_node->prev = node->prev;
     new_node->next = node;
-    if (node == list->root) {
-        list->root = new_node;
+    if (node == list->head) {
+        list->head = new_node;
     } else {
         node->prev->next = new_node;
     }
@@ -123,8 +123,8 @@ Addr list_insert_after(struct Linked_list* list, struct Node* node, Addr ptr) {
 Addr list_remove(struct Linked_list* list, struct Node* node) {
     Addr ret = node->ptr;
     --list->size;
-    if (node == list->root) {
-        list->root = node->next;
+    if (node == list->head) {
+        list->head = node->next;
     } else {
         node->prev->next = node->next;
     }
@@ -186,7 +186,7 @@ int test_list_push_front() {
         list_push_front(&list, array + i);
     }
     // test forward and backward iteration
-    success &= test_list_iterate_helper(list.root);
+    success &= test_list_iterate_helper(list.head);
     list_destroy(&list);
     free(array);
     return success;
@@ -198,7 +198,7 @@ int test_list_push_back() {
     int* array = init_test_array(); // { 0, 1, 2 }
     populate_test_list(&list, array);
     // test forward and backward iteration
-    success &= test_list_iterate_helper(list.root);
+    success &= test_list_iterate_helper(list.head);
     list_destroy(&list);
     free(array);
     return success;
@@ -216,7 +216,7 @@ int test_list_pop_front() {
         success &= (x == i);
     }
     // make sure we have a list which is empty
-    success &= (list.root == NULL && list.tail == NULL);
+    success &= (list.head == NULL && list.tail == NULL);
     list_destroy(&list);
     free(array);
     return success;
@@ -227,7 +227,7 @@ int test_list_pop_back() {
     struct Linked_list list = list_create();
     int* array = init_test_array(); // { 0, 1, 2 }
     populate_test_list(&list, array);
-    struct Node* node = list.root;
+    struct Node* node = list.head;
     // test list_pop_back
     int i;
     for (i = 2; i >= 0; --i) {
@@ -235,7 +235,7 @@ int test_list_pop_back() {
         success &= (x == i);
     }
     // make sure we have a list which is empty
-    success &= (list.root == NULL && list.tail == NULL);
+    success &= (list.head == NULL && list.tail == NULL);
     list_destroy(&list);
     free(array);
     return success;
@@ -246,17 +246,17 @@ int test_list_insert_before() {
     struct Linked_list list = list_create();
     int* array = init_test_array(); // { 0, 1, 2 }
     populate_test_list(&list, array);
-    struct Node* base = list.root;
+    struct Node* base = list.head;
     int* x = malloc(sizeof(int));
     *x = 10;
-    // test insertion before root 
+    // test insertion before head 
     list_insert_before(&list, base, x);
     int* y = malloc(sizeof(int));
     *y = 101;
     // test insertion in between two nodes
     list_insert_before(&list, base, y);
-    success &= *(int*)list.root->ptr == 10;
-    success &= *(int*)list.root->next->next->prev->ptr == 101;
+    success &= *(int*)list.head->ptr == 10;
+    success &= *(int*)list.head->next->next->prev->ptr == 101;
     list_destroy(&list);
     free(array);
     return success;
@@ -288,13 +288,13 @@ int test_list_remove() {
     struct Linked_list list = list_create();
     int* array = init_test_array(); // { 0, 1, 2 }
     populate_test_list(&list, array);
-    // test remove on a non-root, non-tail node
-    list_remove(&list, list.root->next);
-    success &= (*(int*)list.tail->ptr == 2 && *(int*)list.root->ptr == 0);
-    // test remove on a root node
-    list_remove(&list, list.root);
-    success &= list.size == 1 && list.root != NULL;
-    success &= *(int*)list.root->ptr == 2;
+    // test remove on a non-head, non-tail node
+    list_remove(&list, list.head->next);
+    success &= (*(int*)list.tail->ptr == 2 && *(int*)list.head->ptr == 0);
+    // test remove on a head node
+    list_remove(&list, list.head);
+    success &= list.size == 1 && list.head != NULL;
+    success &= *(int*)list.head->ptr == 2;
     list_destroy(&list);
     free(array);
     return success;

@@ -42,7 +42,7 @@ struct Node {
 };
 
 struct Linked_list {
-    struct Node* root;
+    struct Node* head;
     struct Node* tail;
     int size;
 };
