@@ -53,7 +53,7 @@ struct Linked_list list_create() {
 
 void list_destroy(struct Linked_list* list) {
     while (list->size > 0) {
-        list_pop_front(list);
+        Addr ptr = list_pop_front(list);
     }
 }
 
@@ -259,6 +259,8 @@ int test_list_insert_before() {
     success &= *(int*)list.head->next->next->prev->ptr == 101;
     list_destroy(&list);
     free(array);
+    free(x);
+    free(y);
     return success;
 }
 
@@ -280,6 +282,8 @@ int test_list_insert_after() {
     success &= *(int*)list.tail->prev->prev->next->ptr == 123;
     list_destroy(&list);
     free(array);
+    free(x);
+    free(y);
     return success;
 }
 
