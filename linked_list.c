@@ -43,6 +43,9 @@
 /* FUNCTIONS FOR MODULE LINKED_LIST */
 /*--------------------------------------------------------------------------*/
 
+// Returns the data block that the node points to.
+// The data block is located right after a node struct in the 
+// memory pool.
 Addr node_value(struct Node* node) {
     return (Addr)node + sizeof(struct Node);
 }
