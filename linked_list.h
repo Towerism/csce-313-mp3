@@ -32,9 +32,9 @@ typedef void* Addr;
 /* This Node struct represents a node in a linked list.
 */
 struct Node {
-	Addr ptr;
-	struct Node* next;
-	struct Node* prev;
+    Addr ptr;
+    struct Node* next;
+    struct Node* prev;
 };
 
 struct Linked_list {
