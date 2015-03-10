@@ -64,18 +64,11 @@ struct Linked_list list_create(int max_data_size, int blocks) {
     struct Linked_list list;
     list.block_size = sizeof(struct Node) + max_data_size;
     list.memory_pool = malloc(list.block_size * blocks);
-    list.head = list.memory_pool;
+    list.head = NULL;
     list.tail = NULL;
     return list;
 }
-/*
-int main() {
-    struct Linked_list list = list_create(4, 3);
-    int i = 5;
-    struct Node* node = node_create_at(&list, list.memory_pool, &i, 4);
-    printf("node value=%d\n", *(int*)node_value(list.memory_pool));
-}
-*/
+
 void list_destroy(struct Linked_list* list) {
     free(list->memory_pool);
 }
@@ -104,20 +97,20 @@ int list_insert_after(struct Linked_list* list, struct Node* node, Addr ptr, int
 }
 
 int list_insert_front(struct Linked_list* list, Addr ptr, int len) {
-    if (list->tail != NULL) {
+    if (list->head != NULL) {
         return list_insert_before(list, list->head, ptr, len);
     }
-    list->tail = list->head;
     struct Node* new_node = node_create_at(list, list->memory_pool, ptr, len);
     list->head = list->tail = new_node;
 }
 
 int list_insert(struct Linked_list* list, Addr ptr, int len) {
-    if (list->tail == NULL || list->head != list->memory_pool) {
+    if (list->head == NULL || list->head != list->memory_pool) {
         return list_insert_front(list, ptr, len);
     }
     struct Node* node = list->memory_pool;
-    while (node->next != NULL && node->next - node < list->block_size) {
+    // keeps interating until it finds a gap
+    while (node->next != NULL && node->next - node <= list->block_size) {
         node = node->next;
     }
     return list_insert_after(list, (struct Node*)node, ptr, len);

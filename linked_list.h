@@ -39,7 +39,7 @@ struct Node {
 struct Linked_list {
     struct Node* head;
     struct Node* tail;
-    int block_size; // the size of a block
+    int block_size;
     struct Node* memory_pool;
 };
 
@@ -54,6 +54,7 @@ struct Linked_list {
 /* FUNCTIONS FOR MODULE LINKED_LIST */
 /*--------------------------------------------------------------------------*/
 
+// returns a pointer to the data that the node points to
 Addr node_value(struct Node* node);
 
 // constructs a linked_list
