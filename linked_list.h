@@ -54,7 +54,9 @@ struct Linked_list {
 /* FUNCTIONS FOR MODULE LINKED_LIST */
 /*--------------------------------------------------------------------------*/
 
-// returns a pointer to the data that the node points to
+// Returns the data block that the node points to.
+// The data block is located right after a node struct in the 
+// memory pool.
 Addr node_value(struct Node* node);
 
 // constructs a linked_list

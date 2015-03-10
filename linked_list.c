@@ -40,27 +40,21 @@
 
 
 /*--------------------------------------------------------------------------*/
+/* FORWARD DECLARES */
+/*--------------------------------------------------------------------------*/
+
+static struct Node* node_create_at(struct Linked_list* list, struct Node* addr, Addr ptr, int len);
+static struct Node* node_create_at_offset(struct Linked_list* list, struct Node* node, int offset, Addr ptr, int len);
+static int list_insert_before(struct Linked_list* list, struct Node* node, Addr ptr, int len);
+static int list_insert_after(struct Linked_list* list, struct Node* node, Addr ptr, int len);
+static int list_insert_front(struct Linked_list* list, Addr ptr, int len);
+
+/*--------------------------------------------------------------------------*/
 /* FUNCTIONS FOR MODULE LINKED_LIST */
 /*--------------------------------------------------------------------------*/
 
-// Returns the data block that the node points to.
-// The data block is located right after a node struct in the 
-// memory pool.
 Addr node_value(struct Node* node) {
     return (Addr)node + sizeof(struct Node);
-}
-
-// creates a linked list node at the given address
-struct Node* node_create_at(struct Linked_list* list, struct Node* addr, Addr ptr, int len) {
-    struct Node* node = addr;
-    node->next = NULL;
-    node->prev = NULL;
-    memcpy(node_value(node), ptr, len);
-    return node;
-}
-
-struct Node* node_create_at_offset(struct Linked_list* list, struct Node* node, int offset, Addr ptr, int len) {
-    return node_create_at(list, (struct Node*)((Addr)node + offset), ptr, len);
 }
 
 struct Linked_list list_create(int max_data_size, int blocks) {
@@ -74,37 +68,6 @@ struct Linked_list list_create(int max_data_size, int blocks) {
 
 void list_destroy(struct Linked_list* list) {
     free(list->memory_pool);
-}
-
-int list_insert_before(struct Linked_list* list, struct Node* node, Addr ptr, int len) {
-    struct Node* new_node = node_create_at_offset(list, node, -list->block_size, ptr, len);
-    new_node->prev = node->prev;
-    new_node->next = node;
-    if (node == list->head) {
-        list->head = new_node;
-    } else {
-        node->prev->next = new_node;
-    }
-}
-
-int list_insert_after(struct Linked_list* list, struct Node* node, Addr ptr, int len) {
-    struct Node* new_node = node_create_at_offset(list, node, list->block_size, ptr, len);
-    new_node->next = node->next;
-    new_node->prev = node;
-    if (list->tail == node) {
-        list->tail = new_node;
-    } else {
-        node->next->prev = new_node;
-    }
-    node->next = new_node;
-}
-
-int list_insert_front(struct Linked_list* list, Addr ptr, int len) {
-    if (list->head != NULL) {
-        return list_insert_before(list, list->head, ptr, len);
-    }
-    struct Node* new_node = node_create_at(list, list->memory_pool, ptr, len);
-    list->head = list->tail = new_node;
 }
 
 int list_insert(struct Linked_list* list, Addr ptr, int len) {
@@ -130,6 +93,54 @@ int list_remove(struct Linked_list* list, struct Node* node) {
     } else {
         node->next->prev = node->prev;
     }
+}
+
+/*--------------------------------------------------------------------------*/
+/* STATIC FUNCTIONS */
+/*--------------------------------------------------------------------------*/
+
+// creates a linked list node at the given address
+static struct Node* node_create_at(struct Linked_list* list, struct Node* addr, Addr ptr, int len) {
+    struct Node* node = addr;
+    node->next = NULL;
+    node->prev = NULL;
+    memcpy(node_value(node), ptr, len);
+    return node;
+}
+
+static struct Node* node_create_at_offset(struct Linked_list* list, struct Node* node, int offset, Addr ptr, int len) {
+    return node_create_at(list, (struct Node*)((Addr)node + offset), ptr, len);
+}
+
+static int list_insert_before(struct Linked_list* list, struct Node* node, Addr ptr, int len) {
+    struct Node* new_node = node_create_at_offset(list, node, -list->block_size, ptr, len);
+    new_node->prev = node->prev;
+    new_node->next = node;
+    if (node == list->head) {
+        list->head = new_node;
+    } else {
+        node->prev->next = new_node;
+    }
+}
+
+static int list_insert_after(struct Linked_list* list, struct Node* node, Addr ptr, int len) {
+    struct Node* new_node = node_create_at_offset(list, node, list->block_size, ptr, len);
+    new_node->next = node->next;
+    new_node->prev = node;
+    if (list->tail == node) {
+        list->tail = new_node;
+    } else {
+        node->next->prev = new_node;
+    }
+    node->next = new_node;
+}
+
+static int list_insert_front(struct Linked_list* list, Addr ptr, int len) {
+    if (list->head != NULL) {
+        return list_insert_before(list, list->head, ptr, len);
+    }
+    struct Node* new_node = node_create_at(list, list->memory_pool, ptr, len);
+    list->head = list->tail = new_node;
 }
 
 /*--------------------------------------------------------------------------*/
