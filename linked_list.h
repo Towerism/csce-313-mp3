@@ -21,12 +21,8 @@
 /* INCLUDES */
 /*--------------------------------------------------------------------------*/
 
-#include<stdio.h>
-#include<stdlib.h>
-#include "linked_list.h"
-#include "unistd.h"
-#include "errno.h"
-#include <assert.h>
+    /* -- (none) -- */
+
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */
 /*--------------------------------------------------------------------------*/
@@ -89,11 +85,11 @@ Addr list_remove(struct Linked_list* list, struct Node* node);
 /* UnitTests */
 /*--------------------------------------------------------------------------*/
 
-    int test_list_push_front();
-    int test_list_push_back();
-    int test_list_pop_front();
-    int test_list_pop_back();
-    int test_list_insert_before();
-    int test_list_insert_after();
-    int test_list_remove();
+int test_list_push_front();
+int test_list_push_back();
+int test_list_pop_front();
+int test_list_pop_back();
+int test_list_insert_before();
+int test_list_insert_after();
+int test_list_remove();
 #endif
