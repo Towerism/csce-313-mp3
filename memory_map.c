@@ -36,7 +36,9 @@
 /* CONSTANTS */
 /*--------------------------------------------------------------------------*/
 
-    /* -- (none) -- */
+// epsilon represents a basic block in the memory map which is a
+// part of a larger block
+static const char eps = '-';
 
 /*--------------------------------------------------------------------------*/
 /* FORWARDS */
@@ -47,7 +49,7 @@ static void init_char_map(Memory_map* mm);
 static int find_avail_position(Memory_map* mm, char c);
 static int calc_char_offset(Memory_map* mm, char c);
 static char calc_order_char(Memory_map* mm, int ord);
-static void char_map_to_string(Memory_map* mm, char* dest);
+static void abbrev_char_map(Memory_map* mm, char* dest);
 
 /*--------------------------------------------------------------------------*/
 /* FUNCTIONS FOR MODULE MEMORY_MAP */
@@ -55,7 +57,8 @@ static void char_map_to_string(Memory_map* mm, char* dest);
     
 Memory_map* new_memory_map(short int bbs, int bc) {
     int ms = calc_map_size(bbs, bc);
-    Memory_map* mem_map = (Memory_map*)malloc(sizeof(Memory_map) + ms);
+    // add one for the null byte at the end of char_map
+    Memory_map* mem_map = (Memory_map*)malloc(sizeof(Memory_map) + ms + 1);
     // set and test mem_map->memory_pool
     mem_map->basic_block_size = bbs;
     mem_map->high_order = floor(log2((double) ms));
@@ -84,7 +87,8 @@ static int calc_map_size(int bbs, int bc) {
 }
 
 static void init_char_map(Memory_map* mm) {
-    memset(mm->char_map, '\0', mm->map_size);
+    memset(mm->char_map, '-', mm->map_size);
+    mm->char_map[mm->map_size] = '\0'; // set null byte at the end of map
     for(int order = mm->high_order; order >= 0; --order){
         //allocate as many high-order blocks as possible
         char order_char = calc_order_char(mm, order);
@@ -101,7 +105,7 @@ static int find_avail_position(Memory_map* mm, char c) {
     int pos = 0;
     while (pos < mm->map_size) {
         char current = mm->char_map[pos];
-        if (current == '\0') {
+        if (current == eps) {
             break;
         }
         int current_offset = calc_char_offset(mm, current);
@@ -128,12 +132,15 @@ static char calc_order_char(Memory_map* mm, int ord) {
     return order_char;
 }
 
-static void char_map_to_string(Memory_map* mm, char* dest) {
+// Copies an abbreviated char_map into the dest string
+// Note that the more we split blocks of memory, the less
+// we are able to abbreviate
+static void abbrev_char_map(Memory_map* mm, char* dest) {
     int i;
     memset(dest, 0, mm->map_size);
     for (i = 0; i < mm->map_size; ++i) {
         char c = mm->char_map[i];
-        if (c == '\0') {
+        if (c == eps) {
             continue;
         }
         strncat(dest, &c, 1);
@@ -159,12 +166,12 @@ int test_init_char_map() {
     int success = 1;
     Memory_map* mem_map1 = new_memory_map(2, 128);
     char str1[mem_map1->map_size];
-    char_map_to_string(mem_map1, str1);
+    abbrev_char_map(mem_map1, str1);
     success &= strcmp(str1, "a") == 0;
     Memory_map* mem_map2 = new_memory_map(2, 254);
     int i;
     char str2[mem_map2->map_size];
-    char_map_to_string(mem_map2, str2);
+    abbrev_char_map(mem_map2, str2);
     success &= strcmp(str2, "abcdefg") == 0;
     delete_memory_map(mem_map1);
     delete_memory_map(mem_map2);
