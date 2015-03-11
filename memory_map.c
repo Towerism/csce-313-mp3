@@ -47,7 +47,7 @@ static void init_char_map(Memory_map* mm);
 static int find_avail_position(Memory_map* mm, char c);
 static int calc_char_offset(Memory_map* mm, char c);
 static char calc_order_char(Memory_map* mm, int ord);
-static void char_map_to_string(Memory_map* mm, char* res);
+static void char_map_to_string(Memory_map* mm, char* dest);
 
 /*--------------------------------------------------------------------------*/
 /* FUNCTIONS FOR MODULE MEMORY_MAP */
@@ -85,7 +85,6 @@ static int calc_map_size(int bbs, int bc) {
 }
 
 static void init_char_map(Memory_map* mm) {
-    int empty_block_count = mm->map_size;
     for(int order = mm->high_order; order >= 0; --order){
         //allocate as many high-order blocks as possible
         char order_char = calc_order_char(mm, order);
@@ -93,7 +92,6 @@ static void init_char_map(Memory_map* mm) {
         int found = find_avail_position(mm, order_char);
         if (found != -1) {
             mm->char_map[found] = order_char;
-            empty_block_count -= calc_char_offset(mm, order_char);
         } 
     }
 }
@@ -130,15 +128,15 @@ static char calc_order_char(Memory_map* mm, int ord) {
     return order_char;
 }
 
-static void char_map_to_string(Memory_map* mm, char* result) {
+static void char_map_to_string(Memory_map* mm, char* dest) {
     int i;
-    memset(result, 0, mm->map_size);
+    memset(dest, 0, mm->map_size);
     for (i = 0; i < mm->map_size; ++i) {
         char c = mm->char_map[i];
         if (c == '\0') {
             continue;
         }
-        strncat(result, &c, 1);
+        strncat(dest, &c, 1);
     }
 }
 
