@@ -61,7 +61,6 @@ Memory_map* new_memory_map(short int bbs, int bc) {
     mem_map->high_order = floor(log2((double) ms));
     mem_map->byte_count = bc;
     mem_map->map_size = ms;
-    memset(mem_map->char_map, '\0', ms);
     init_char_map(mem_map);
     return mem_map;
 }
@@ -85,6 +84,7 @@ static int calc_map_size(int bbs, int bc) {
 }
 
 static void init_char_map(Memory_map* mm) {
+    memset(mm->char_map, '\0', mm->map_size);
     for(int order = mm->high_order; order >= 0; --order){
         //allocate as many high-order blocks as possible
         char order_char = calc_order_char(mm, order);
