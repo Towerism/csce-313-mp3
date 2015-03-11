@@ -66,6 +66,12 @@ Memory_map* new_memory_map(short int bbs, int bc) {
     return mem_map;
 }
 
+// It is idiomatic to have a matching delete function
+// Also easier to maintain
+void delete_memory_map(Memory_map* mm) {
+    free(mm);
+}
+
 /*--------------------------------------------------------------------------*/
 /* STATIC FUNCTIONS */
 /*--------------------------------------------------------------------------*/
@@ -147,6 +153,7 @@ int test_new_memory_map() {
     success &= mem_map->high_order == 6;
     success &= mem_map->byte_count == 128;
     success &= mem_map->map_size == 64;
+    delete_memory_map(mem_map);
     return success;
 }
 
@@ -161,5 +168,7 @@ int test_init_char_map() {
     char str2[mem_map2->map_size];
     char_map_to_string(mem_map2, str2);
     success &= strcmp(str2, "abcdefg") == 0;
+    delete_memory_map(mem_map1);
+    delete_memory_map(mem_map2);
     return success;
 }
