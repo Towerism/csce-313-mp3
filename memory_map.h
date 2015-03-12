@@ -49,13 +49,13 @@ typedef struct Memory_map {
 /*--------------------------------------------------------------------------*/
 
 // Constructs a new memory map with a basic block size and a byte count
-Memory_map* new_memory_map(short int bbs, int bc);
+Memory_map* new_memory_map(short int bbs, int bc, Addr mp);
 
 // Destructs the memory map and frees dynamically allocated memory
 // Needs to be tested
 void delete_memory_map(Memory_map* mm);
 
-// Returns the address of a free block given the block size 
+// Returns the address of a free block given the block size
 // returns **NULL** if no free block is found with given block size
 // the block returned is no longer free
 Addr get_block(Memory_map* mm, int bs);
@@ -70,5 +70,6 @@ int release_block(Memory_map* mm, Addr addr);
 
 int test_new_memory_map();
 int test_init_char_map();
+int test_get_block();
 
 #endif

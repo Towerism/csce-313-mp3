@@ -39,27 +39,28 @@
 // epsilon represents a basic block in the memory map which is a
 // part of a larger block
 static const char eps = '-';
-
+typedef enum {EMPTY, FREE, RESERVED} search_type;
 /*--------------------------------------------------------------------------*/
 /* FORWARDS */
 /*--------------------------------------------------------------------------*/
 
 static int calc_map_size(int bbs, int bc);
 static void init_char_map(Memory_map* mm);
-static int find_avail_position(Memory_map* mm, char c);
+static int find_candidate_position(Memory_map* mm, char c, search_type st);
 static int calc_char_offset(Memory_map* mm, char c);
 static char calc_order_char(Memory_map* mm, int ord);
 static void abbrev_char_map(Memory_map* mm, char* dest);
-
+/* static int  calc_offset_map(Memory_map* mm, int i); */
+static Addr map_pos_to_addr(Memory_map* mm, int i);
 /*--------------------------------------------------------------------------*/
 /* FUNCTIONS FOR MODULE MEMORY_MAP */
 /*--------------------------------------------------------------------------*/
-    
-Memory_map* new_memory_map(short int bbs, int bc) {
+
+Memory_map* new_memory_map(short int bbs, int bc, Addr mp) {
     int ms = calc_map_size(bbs, bc);
     // add one for the null byte at the end of char_map
     Memory_map* mem_map = (Memory_map*)malloc(sizeof(Memory_map) + ms + 1);
-    // set and test mem_map->memory_pool
+    mem_map->memory_pool = mp;
     mem_map->basic_block_size = bbs;
     mem_map->high_order = floor(log2((double) ms));
     mem_map->byte_count = bc;
@@ -72,6 +73,22 @@ Memory_map* new_memory_map(short int bbs, int bc) {
 // Also easier to maintain
 void delete_memory_map(Memory_map* mm) {
     free(mm);
+}
+
+
+Addr get_block(Memory_map* mm, int bs){
+  Addr free_block_loc = NULL;
+  //get lowest order free block that can contain bs
+  int ord = ceil(log2( (double)bs ));
+  char c = calc_order_char(mm, ord);
+  int index = find_candidate_position(mm, c, FREE);
+
+  if(index != -1){
+      char reserved_c = toupper(mm->char_map[index]);
+      mm->char_map[index] = reserved_c;
+      free_block_loc = map_pos_to_addr(mm, index);
+  }
+  return free_block_loc;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -93,58 +110,70 @@ static void init_char_map(Memory_map* mm) {
         //allocate as many high-order blocks as possible
         char order_char = calc_order_char(mm, order);
         // find the correct position
-        int found = find_avail_position(mm, order_char);
+        int found = find_candidate_position(mm, order_char, EMPTY);
         if (found != -1) {
             mm->char_map[found] = order_char;
-        } 
+        }
     }
 }
 
-static int find_avail_position(Memory_map* mm, char c) {
+static int find_candidate_position(Memory_map* mm, char c, search_type st) {
     int c_offset = calc_char_offset(mm, c);
     int pos = 0;
     while (pos < mm->map_size) {
+
         char current = mm->char_map[pos];
-        if (current == eps) {
-            break;
+        switch(st){
+          case EMPTY:
+            if (current == eps)
+              return pos;
+          case FREE:
+            if (current == c && islower(current))
+              return pos;
+          case RESERVED:
+            if (current == c && isupper(current))
+              return pos;
         }
+
         int current_offset = calc_char_offset(mm, current);
-        if (c_offset > current_offset) {
-            pos += c_offset;
-        } else {
-            pos += current_offset;
-        }
+        if (c_offset > current_offset)
+          pos += c_offset;
+        else
+          pos += current_offset;
     }
-    if (pos >= mm->map_size) {
-        return -1;
-    }
-    return pos;
+    return -1;
 }
 
 static int calc_char_offset(Memory_map* mm, char c) {
-    int order = (int)'a' + mm->high_order - tolower(c);
-    int offset = pow(2, order);
-    return offset;
+  int order = (int)'a' + mm->high_order - tolower(c);
+  int offset = pow(2, order);
+  return offset;
 }
 
 static char calc_order_char(Memory_map* mm, int ord) {
-    char order_char = (int)'a' + mm->high_order - ord;
-    return order_char;
+  char order_char = (int)'a' + mm->high_order - ord;
+  return order_char;
 }
 
 // Copies an abbreviated char_map into the dest string
 // Note that the more we split blocks of memory, the less
 // we are able to abbreviate
 static void abbrev_char_map(Memory_map* mm, char* dest) {
-    int i;
-    memset(dest, 0, mm->map_size);
-    for (i = 0; i < mm->map_size; ++i) {
-        char c = mm->char_map[i];
-        if (c == eps) {
-            continue;
-        }
-        strncat(dest, &c, 1);
+  int i;
+  memset(dest, 0, mm->map_size);
+  for (i = 0; i < mm->map_size; ++i) {
+    char c = mm->char_map[i];
+    if (c == eps) {
+      continue;
     }
+    strncat(dest, &c, 1);
+  }
+}
+
+static Addr map_pos_to_addr(Memory_map* mm, int i){
+  int offset = i * mm->basic_block_size;
+  Addr calculated_addr = mm->memory_pool + offset;
+  return calculated_addr;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -152,28 +181,57 @@ static void abbrev_char_map(Memory_map* mm, char* dest) {
 /*--------------------------------------------------------------------------*/
 
 int test_new_memory_map() {
-    int success = 1;
-    Memory_map* mem_map = new_memory_map(2, 128);
-    success &= mem_map->basic_block_size == 2;
-    success &= mem_map->high_order == 6;
-    success &= mem_map->byte_count == 128;
-    success &= mem_map->map_size == 64;
-    delete_memory_map(mem_map);
-    return success;
+  int success = 1;
+  Addr memory = (Addr)malloc(128);
+  Memory_map* mem_map = new_memory_map(2, 128, memory);
+  success &= mem_map->basic_block_size == 2;
+  success &= mem_map->high_order == 6;
+  success &= mem_map->byte_count == 128;
+  success &= mem_map->map_size == 64;
+  success &= mem_map->memory_pool == memory;
+  delete_memory_map(mem_map);
+  return success;
 }
 
 int test_init_char_map() {
-    int success = 1;
-    Memory_map* mem_map1 = new_memory_map(2, 128);
-    char str1[mem_map1->map_size];
-    abbrev_char_map(mem_map1, str1);
-    success &= strcmp(str1, "a") == 0;
-    Memory_map* mem_map2 = new_memory_map(2, 254);
-    int i;
-    char str2[mem_map2->map_size];
-    abbrev_char_map(mem_map2, str2);
-    success &= strcmp(str2, "abcdefg") == 0;
-    delete_memory_map(mem_map1);
-    delete_memory_map(mem_map2);
-    return success;
+  int success = 1;
+  Addr memory1 = (Addr)malloc(128);
+  Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
+  char str1[mem_map1->map_size];
+  abbrev_char_map(mem_map1, str1);
+  success &= strcmp(str1, "a") == 0;
+
+  Addr memory2 = (Addr)malloc(254);
+  Memory_map* mem_map2 = new_memory_map(2, 254, memory2);
+  int i;
+  char str2[mem_map2->map_size];
+  abbrev_char_map(mem_map2, str2);
+  success &= strcmp(str2, "abcdefg") == 0;
+  delete_memory_map(mem_map1);
+  delete_memory_map(mem_map2);
+  return success;
+}
+int test_get_block() {
+  int success = 1;
+  Addr memory1 = (Addr)malloc(128);
+  Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
+  Addr block_16 = get_block(mem_map1, 60);
+
+  char str1[mem_map1->map_size];
+  abbrev_char_map(mem_map1, str1);
+  success &= strcmp(str1, "A") == 0;
+
+  Addr memory2 = (Addr)malloc(254);
+  Memory_map* mem_map2 = new_memory_map(2, 254, memory2);
+
+  char str2[mem_map2->map_size];
+  Addr block_15 = get_block(mem_map2, 15);
+  Addr block_4 = get_block(mem_map2, 4);
+  Addr block_200 = get_block(mem_map2, 200);
+
+  abbrev_char_map(mem_map2, str2);
+  success &= strcmp(str2, "abCdEfg") == 0;
+  success &= block_200 == NULL; //too big should fail
+
+  return success;
 }

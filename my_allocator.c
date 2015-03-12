@@ -149,6 +149,7 @@ Addr split(unsigned int order){
 
 
 extern Addr my_malloc(unsigned int _length) {
+  // add offset to be sizeof(Memory_map) + mm->map_size + 1;
   double exact = log2((double) _length / b_b_s) ;
   int order = ceil(exact);
   Addr free_block = NULL;
