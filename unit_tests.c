@@ -16,6 +16,9 @@ int main() {
   assert(test_new_memory_map() == 1);
   assert(test_init_char_map() == 1);
   assert(test_get_block() == 1);
+  assert(test_release_block() == 1);
+  /* assert(test_coalesce() == 1); */
+  /* assert(test_split() == 1); */
   printf("Unit Tests have been run successfully\n");
   return 1;
 }
