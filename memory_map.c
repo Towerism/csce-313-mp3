@@ -85,14 +85,14 @@ void delete_memory_map(Memory_map* mm) {
 }
 
 
-Addr get_block(Memory_map* mm, int bs){
+Addr get_block(Memory_map* mm, int bs) {
     Addr free_block_loc = NULL;
     //get lowest order free block that can contain bs
     int ord = ceil(log2( (double)bs ));
     char c = calc_order_char(mm, ord);
     int index = find_candidate_position(mm, c, FREE);
     if (index == -1) {
-        index = split(mm, ord);
+        index = split(mm, ord + 1);
     }
     if (index != -1) {
         char reserved_c = toupper(mm->char_map[index]);
@@ -102,17 +102,17 @@ Addr get_block(Memory_map* mm, int bs){
     return free_block_loc;
 }
 
-int release_block(Memory_map* mm, Addr addr){
+int release_block(Memory_map* mm, Addr addr) {
 
     int pos = addr_to_map_pos(mm, addr);
 
-    if(pos < 0 || pos >= mm->map_size){
+    if (pos < 0 || pos >= mm->map_size) {
         fprintf(stderr, "Error: Release_block: invalid release location\n");
         return 0;
     }
 
     char c  = mm->char_map[pos];
-    if (isupper(c)){
+    if (isupper(c)) {
         mm->char_map[pos] = tolower(c);
         coalesce(mm, char_to_order(mm, c));
         return 1;
@@ -136,7 +136,7 @@ static void init_char_map(Memory_map* mm) {
     memset(mm->char_map, '-', mm->map_size);
     mm->char_map[mm->map_size] = '\0'; // set null byte at the end of map
     int order;
-    for (order = mm->high_order; order >= 0; --order){
+    for (order = mm->high_order; order >= 0; --order) {
         //allocate as many high-order blocks as possible
         char order_char = calc_order_char(mm, order);
         // find the correct position
@@ -168,7 +168,7 @@ static int find_candidate_position(Memory_map* mm, char c, search_type st) {
                 if ((pos / c_offset % 2) == 0) {//we have a left buddy
                     char left = current;
                     char right = mm->char_map[pos + c_offset];
-                    if(islower(left) && left == right) {
+                    if (islower(left) && left == right) {
                         return pos;
                     }
                 }
@@ -229,12 +229,12 @@ static int addr_to_map_pos(Memory_map* mm, Addr a) {
 //implement buddy finder by checking if char_map(pos/2^order) %2 == 0 then we we
 //have left buddy, otherwise we have right buddy
 static void coalesce(Memory_map* mm, int ord) {
-    if(ord > 0) {
+    if (ord > 0) {
         coalesce(mm, ord - 1);
     }
     while (1) {
         int pos = find_candidate_position(mm, calc_order_char(mm, ord), BUDDY);
-        if(pos != -1){
+        if (pos != -1) {
             char* left = &mm->char_map[pos];
             char* right = &mm->char_map[pos + (int)pow(2, ord)];
             *left = calc_order_char(mm, ord + 1);
@@ -260,7 +260,6 @@ static int split(Memory_map* mm, int ord) {
     *right = lower_order;
     return pos;
 }
-
 
 /*--------------------------------------------------------------------------*/
 /* UnitTests */
@@ -302,7 +301,7 @@ int test_get_block() {
     int success = 1;
     Addr memory1 = (Addr)malloc(128);
     Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
-    Addr block_30 = get_block(mem_map1, 30);
+    Addr block_15 = get_block(mem_map1, 15);
 
     char str1[mem_map1->map_size];
     abbrev_char_map(mem_map1, str1);
@@ -312,7 +311,7 @@ int test_get_block() {
     Memory_map* mem_map2 = new_memory_map(2, 254, memory2);
 
     char str2[mem_map2->map_size];
-    Addr block_15 = get_block(mem_map2, 15);
+    block_15 = get_block(mem_map2, 15);
     Addr block_4 = get_block(mem_map2, 4);
     Addr block_200 = get_block(mem_map2, 200);
 
@@ -325,7 +324,7 @@ int test_get_block() {
     return success;
 }
 
-int test_release_block(){
+int test_release_block() {
     int success = 1;
     Addr memory1 = (Addr)malloc(254);
     Memory_map* mem_map1 = new_memory_map(2, 254, memory1);
@@ -344,13 +343,13 @@ int test_release_block(){
 
     Addr memory2 = (Addr)malloc(128);
     Memory_map* mem_map2 = new_memory_map(2, 128, memory2);
-    Addr block_30 = get_block(mem_map2, 30);
+    block_15 = get_block(mem_map2, 15);
 
     char str2[mem_map2->map_size];
     abbrev_char_map(mem_map2, str2);
     success &= strcmp(str2, "Ccb") == 0;
 
-    release_block(mem_map2, block_30);
+    release_block(mem_map2, block_15);
     abbrev_char_map(mem_map2, str2);
     success &= strcmp(str2, "a");
 
@@ -359,7 +358,7 @@ int test_release_block(){
     return success;
 }
 
-int test_coalesce(){
+int test_coalesce() {
     int success = 1;
     Addr memory1 = malloc(128);
     Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
@@ -371,7 +370,7 @@ int test_coalesce(){
     return success;
 }
 
-int test_split(){
+int test_split() {
     int success = 1;
     Addr memory1 = malloc(128);
     Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
