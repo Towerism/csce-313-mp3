@@ -47,12 +47,20 @@ typedef enum {EMPTY, FREE, RESERVED, BUDDY} search_type;
 static int calc_map_size(int bbs, int bc);
 static void init_char_map(Memory_map* mm);
 static int find_candidate_position(Memory_map* mm, char c, search_type st);
+static int char_to_order(Memory_map* mm, char c);
 static int calc_char_offset(Memory_map* mm, char c);
 static char calc_order_char(Memory_map* mm, int ord);
 static void abbrev_char_map(Memory_map* mm, char* dest);
 /* static int  calc_offset_map(Memory_map* mm, int i); */
 static Addr map_pos_to_addr(Memory_map* mm, int i);
 static int addr_to_map_pos(Memory_map* mm, Addr a);
+static void coalesce(Memory_map* mm, int ord);
+
+// splits a block of memory
+// returns the index of the left buddy if successful
+// returns -1 otherwise
+static int split(Memory_map* mm, int ord);
+
 /*--------------------------------------------------------------------------*/
 /* FUNCTIONS FOR MODULE MEMORY_MAP */
 /*--------------------------------------------------------------------------*/
@@ -83,8 +91,10 @@ Addr get_block(Memory_map* mm, int bs){
     int ord = ceil(log2( (double)bs ));
     char c = calc_order_char(mm, ord);
     int index = find_candidate_position(mm, c, FREE);
-
-    if(index != -1){
+    if (index == -1) {
+        index = split(mm, ord);
+    }
+    if (index != -1) {
         char reserved_c = toupper(mm->char_map[index]);
         mm->char_map[index] = reserved_c;
         free_block_loc = map_pos_to_addr(mm, index);
@@ -102,8 +112,9 @@ int release_block(Memory_map* mm, Addr addr){
     }
 
     char c  = mm->char_map[pos];
-    if(isupper(c)){
+    if (isupper(c)){
         mm->char_map[pos] = tolower(c);
+        coalesce(mm, char_to_order(mm, c));
         return 1;
     }
     return 0; //wasn't allocated
@@ -124,7 +135,8 @@ static int calc_map_size(int bbs, int bc) {
 static void init_char_map(Memory_map* mm) {
     memset(mm->char_map, '-', mm->map_size);
     mm->char_map[mm->map_size] = '\0'; // set null byte at the end of map
-    for(int order = mm->high_order; order >= 0; --order){
+    int order;
+    for (order = mm->high_order; order >= 0; --order){
         //allocate as many high-order blocks as possible
         char order_char = calc_order_char(mm, order);
         // find the correct position
@@ -141,7 +153,7 @@ static int find_candidate_position(Memory_map* mm, char c, search_type st) {
     while (pos < mm->map_size) {
 
         char current = mm->char_map[pos];
-        switch(st){
+        switch (st) {
             case EMPTY:
                 if (current == eps)
                     return pos;
@@ -153,10 +165,10 @@ static int find_candidate_position(Memory_map* mm, char c, search_type st) {
                     return pos;
             case BUDDY:
                 //c_offset == order^2
-                if ((pos / c_offset % 2) == 0){//we have a left buddy
+                if ((pos / c_offset % 2) == 0) {//we have a left buddy
                     char left = current;
                     char right = mm->char_map[pos + c_offset];
-                    if(islower(left) && left == right){
+                    if(islower(left) && left == right) {
                         return pos;
                     }
                 }
@@ -171,8 +183,13 @@ static int find_candidate_position(Memory_map* mm, char c, search_type st) {
     return -1;
 }
 
-static int calc_char_offset(Memory_map* mm, char c) {
+static int char_to_order(Memory_map* mm, char c) {
     int order = (int)'a' + mm->high_order - tolower(c);
+    return order;
+}
+
+static int calc_char_offset(Memory_map* mm, char c) {
+    int order = char_to_order(mm, c);
     int offset = pow(2, order);
     return offset;
 }
@@ -197,35 +214,51 @@ static void abbrev_char_map(Memory_map* mm, char* dest) {
     }
 }
 
-static Addr map_pos_to_addr(Memory_map* mm, int i){
+static Addr map_pos_to_addr(Memory_map* mm, int i) {
     int offset = i * mm->basic_block_size;
     Addr calculated_addr = mm->memory_pool + offset;
     return calculated_addr;
 }
 
-static int addr_to_map_pos(Memory_map* mm, Addr a){
+static int addr_to_map_pos(Memory_map* mm, Addr a) {
     int offset =   a - mm->memory_pool ;
     int i = offset / mm->basic_block_size;
     return i;
 }
+
 //implement buddy finder by checking if char_map(pos/2^order) %2 == 0 then we we
 //have left buddy, otherwise we have right buddy
-void coalesce(Memory_map* mm, int ord){
-    if(ord > 0){
+static void coalesce(Memory_map* mm, int ord) {
+    if(ord > 0) {
         coalesce(mm, ord - 1);
     }
-    while(1){
+    while (1) {
         int pos = find_candidate_position(mm, calc_order_char(mm, ord), BUDDY);
         if(pos != -1){
-            char *left = &mm->char_map[pos];
-            char *right = &mm->char_map[pos];
+            char* left = &mm->char_map[pos];
+            char* right = &mm->char_map[pos + (int)pow(2, ord)];
             *left = calc_order_char(mm, ord + 1);
-            *right = '-';
+            *right = eps;
+        } else {
+            break;
         }
     }
 }
-void split(Memory_map* mm, int ord){
 
+static int split(Memory_map* mm, int ord) {
+    if (ord > mm->high_order) {
+        return -1;
+    }
+    int pos = find_candidate_position(mm, calc_order_char(mm, ord), FREE);
+    if (pos == -1) {
+        pos = split(mm, ord + 1);
+    }
+    char* left = &mm->char_map[pos];
+    char* right = &mm->char_map[pos + (int)pow(2, ord - 1)];
+    char lower_order = calc_order_char(mm, ord - 1);
+    *left = lower_order;
+    *right = lower_order;
+    return pos;
 }
 
 
@@ -264,15 +297,16 @@ int test_init_char_map() {
     delete_memory_map(mem_map2);
     return success;
 }
+
 int test_get_block() {
     int success = 1;
     Addr memory1 = (Addr)malloc(128);
     Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
-    Addr block_16 = get_block(mem_map1, 60);
+    Addr block_30 = get_block(mem_map1, 30);
 
     char str1[mem_map1->map_size];
     abbrev_char_map(mem_map1, str1);
-    success &= strcmp(str1, "A") == 0;
+    success &= strcmp(str1, "Ccb") == 0;
 
     Addr memory2 = (Addr)malloc(254);
     Memory_map* mem_map2 = new_memory_map(2, 254, memory2);
@@ -286,6 +320,8 @@ int test_get_block() {
     success &= strcmp(str2, "abCdEfg") == 0;
     success &= block_200 == NULL; //too big should fail
 
+    delete_memory_map(mem_map1);
+    delete_memory_map(mem_map2);
     return success;
 }
 
@@ -304,17 +340,44 @@ int test_release_block(){
     success &= (release_block(mem_map1, memory1) == 0);//should fail
     abbrev_char_map(mem_map1, str1);
     success &= strcmp(str1, "abcdefg") == 0;
+    delete_memory_map(mem_map1);
+
+    Addr memory2 = (Addr)malloc(128);
+    Memory_map* mem_map2 = new_memory_map(2, 128, memory2);
+    Addr block_30 = get_block(mem_map2, 30);
+
+    char str2[mem_map2->map_size];
+    abbrev_char_map(mem_map2, str2);
+    success &= strcmp(str2, "Ccb") == 0;
+
+    release_block(mem_map2, block_30);
+    abbrev_char_map(mem_map2, str2);
+    success &= strcmp(str2, "a");
+
+    delete_memory_map(mem_map1);
+    delete_memory_map(mem_map2);
     return success;
 }
 
 int test_coalesce(){
-    //needs split to test...
     int success = 1;
+    Addr memory1 = malloc(128);
+    Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
+    split(mem_map1, 1);
+    char str1[mem_map1->map_size];
+    coalesce(mem_map1, 3);
+    abbrev_char_map(mem_map1, str1);
+    success &= strcmp(str1, "ccb") == 0;
     return success;
 }
 
 int test_split(){
-    //needs coalesce to test...
     int success = 1;
+    Addr memory1 = malloc(128);
+    Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
+    split(mem_map1, 1);
+    char str1[mem_map1->map_size];
+    abbrev_char_map(mem_map1, str1);
+    success &= strcmp(str1, "ggfedcb") == 0;
     return success;
 }
