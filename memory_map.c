@@ -87,6 +87,8 @@ void delete_memory_map(Memory_map* mm) {
 
 Addr get_block(Memory_map* mm, int bs) {
     Addr free_block_loc = NULL;
+    if (bs > mm->byte_count)
+        return NULL;
     //get lowest order free block that can contain bs
     int ord = ceil(log2( (double)bs ));
     char c = calc_order_char(mm, ord);
@@ -99,6 +101,7 @@ Addr get_block(Memory_map* mm, int bs) {
         mm->char_map[index] = reserved_c;
         free_block_loc = map_pos_to_addr(mm, index);
     }
+
     return free_block_loc;
 }
 
@@ -114,7 +117,7 @@ int release_block(Memory_map* mm, Addr addr) {
     char c  = mm->char_map[pos];
     if (isupper(c)) {
         mm->char_map[pos] = tolower(c);
-        coalesce(mm, char_to_order(mm, c));
+        coalesce(mm, char_to_order(mm, c) - 1);
         return 1;
     }
     return 0; //wasn't allocated
@@ -153,25 +156,33 @@ static int find_candidate_position(Memory_map* mm, char c, search_type st) {
     while (pos < mm->map_size) {
 
         char current = mm->char_map[pos];
+        // break statements are needed here
+        // otherwise cases fall through when the if-conditions are false
         switch (st) {
             case EMPTY:
                 if (current == eps)
                     return pos;
+                break;
             case FREE:
-                if (current == c && islower(current))
+                if (current == tolower(c))
                     return pos;
+                break;
             case RESERVED:
-                if (current == c && isupper(current))
+                if (current == toupper(c))
                     return pos;
+                break;
             case BUDDY:
                 //c_offset == order^2
-                if ((pos / c_offset % 2) == 0) {//we have a left buddy
+                if ((pos / c_offset) % 2 == 0) {//we have a left buddy
                     char left = current;
+                    if (pos + c_offset >= mm->map_size)
+                        break;
                     char right = mm->char_map[pos + c_offset];
                     if (islower(left) && left == right) {
                         return pos;
                     }
                 }
+                break;
         }
 
         int current_offset = calc_char_offset(mm, current);
@@ -253,8 +264,8 @@ static int split(Memory_map* mm, int ord) {
     if (pos == -1) {
         pos = split(mm, ord + 1);
     }
-    char* left = &mm->char_map[pos];
-    char* right = &mm->char_map[pos + (int)pow(2, ord - 1)];
+    char* left = mm->char_map + pos;
+    char* right = mm->char_map + pos + (int)pow(2, ord - 1);
     char lower_order = calc_order_char(mm, ord - 1);
     *left = lower_order;
     *right = lower_order;
