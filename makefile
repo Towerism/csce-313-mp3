@@ -1,10 +1,10 @@
 # makefile
 
 TARGET=memtest
-CFLAGS=-c -g
+CFLAGS=-c -ggdb -O0
 LFLAGS=-lm
 
-all: memtest
+all: memtest test
 test: unit_tests
 
 ackerman.o: ackerman.c ackerman.h
@@ -20,9 +20,9 @@ memtest: memtest.o ackerman.o my_allocator.o memory_map.o
 unit_tests.o: my_allocator.h memory_map.h
 	gcc $(CFLAGS) unit_tests.c
 unit_tests: unit_tests.o my_allocator.o memory_map.o
-	gcc -o unit_tests unit_tests.o my_allocator.o memory_map.o
+	gcc -o unit_tests unit_tests.o my_allocator.o memory_map.o && ./unit_tests
 
 .PHONY: clean
 clean:
-	rm -rf *.o *.out $(TARGET)
+	rm -rf *.o *.out $(TARGET) unit_tests
 
