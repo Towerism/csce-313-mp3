@@ -65,7 +65,7 @@ static int split(Memory_map* mm, int ord);
 /*--------------------------------------------------------------------------*/
 /* FUNCTIONS FOR MODULE MEMORY_MAP */
 /*--------------------------------------------------------------------------*/
-
+int DEBUG_MAP_SIZE = 0;
 Memory_map* new_memory_map(short int bbs, int bc, Addr mp) {
     int ms = calc_map_size(bbs, bc);
     // add one for the null byte at the end of char_map
@@ -75,10 +75,10 @@ Memory_map* new_memory_map(short int bbs, int bc, Addr mp) {
     mem_map->high_order = floor(log2((double) ms));
     mem_map->byte_count = bc;
     mem_map->map_size = ms;
+    DEBUG_MAP_SIZE = ms;
     init_char_map(mem_map);
     return mem_map;
 }
-
 // It is idiomatic to have a matching delete function
 // Also easier to maintain
 void delete_memory_map(Memory_map* mm) {
@@ -93,20 +93,18 @@ Addr get_block(Memory_map* mm, int bs) {
     }
     int block_count = ceil((double)bs / mm->basic_block_size);
     Addr free_block_loc = NULL;
-    // consider using basic_block_size in this calculation
     int ord = ceil(log2( block_count ));
     char c = calc_order_char(mm, ord);
     int index = find_candidate_position(mm, c, FREE);
-    assert(index < 8000);
-    if (index == -1) {
+    if (index == -1 && ord < mm->high_order) {
         index = split(mm, ord + 1);
     }
-    if (index != -1) {
+    if (index >= 0 && index < mm->map_size) {
         char reserved_c = toupper(mm->char_map[index]);
         mm->char_map[index] = reserved_c;
         free_block_loc = map_pos_to_addr(mm, index);
     }
-    print_char_map( mm);
+    addr_to_map_pos(mm, free_block_loc);
     return free_block_loc;
 }
 
@@ -123,9 +121,10 @@ int release_block(Memory_map* mm, Addr addr) {
     if (isupper(c)) {
         mm->char_map[pos] = tolower(c);
         coalesce(mm, char_to_order(mm, c));
-        print_char_map(mm);
+        /* print_char_map(mm); */
         return 1;
     }
+    fprintf(stderr, "Error: Release_block: failed\n");
     return 0; //wasn't allocated
 }
 
@@ -151,7 +150,6 @@ static void init_char_map(Memory_map* mm) {
         // find the correct position
         int found = find_candidate_position(mm, order_char, EMPTY);
 
-    assert(found < 8000);
         if (found != -1) {
             mm->char_map[found] = order_char;
         }
@@ -163,7 +161,6 @@ static int find_candidate_position(Memory_map* mm, char c, search_type st) {
     int pos = 0;
     while (pos < mm->map_size) {
 
-    assert(pos < 8000);
         char current = mm->char_map[pos];
         // break statements are needed here
         // otherwise cases fall through when the if-conditions are false
@@ -227,7 +224,6 @@ static void abbrev_char_map(Memory_map* mm, char* dest) {
     int i;
     memset(dest, 0, mm->map_size);
     for (i = 0; i < mm->map_size; ++i) {
-    assert(i < 8000);
         char c = mm->char_map[i];
         if (c == eps) {
             continue;
@@ -279,14 +275,19 @@ static int split(Memory_map* mm, int ord) {
         return -1;
     }
     int pos = find_candidate_position(mm, calc_order_char(mm, ord), FREE);
-    if (pos == -1) {
+    if (pos == -1 && ord < mm->high_order) {
         pos = split(mm, ord + 1);
     }
+
+    if(pos == -1 ) {
+        return -1;
+    }
+
+    char lower_order_c = calc_order_char(mm, ord - 1);
     char* left = mm->char_map + pos;
-    char* right = mm->char_map + pos + (int)pow(2, ord - 1);
-    char lower_order = calc_order_char(mm, ord - 1);
-    *left = lower_order;
-    *right = lower_order;
+    char* right = mm->char_map + pos + calc_char_offset(mm, lower_order_c);
+    *left = lower_order_c;
+    *right = lower_order_c;
     return pos;
 }
 

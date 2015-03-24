@@ -4,7 +4,7 @@ int main(int argc, char ** argv) {
 
   // input parameters (basic block size, memory length)
 
-  init_allocator(128, 1024000);
+  init_allocator(128, 67108864);
 
   ackerman_main();
 

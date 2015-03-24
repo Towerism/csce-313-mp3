@@ -185,7 +185,7 @@ int ackerman(int a, int b) {
         my_free(mem);
     }
     else{
-            /* printf("DEBUG: Failed to allocate\n"); */
+            printf("DEBUG: Failed to allocate\n");
     }
 
     return result;
