@@ -52,8 +52,7 @@ static int calc_char_offset(Memory_map* mm, char c);
 static char calc_order_char(Memory_map* mm, int ord);
 static void abbrev_char_map(Memory_map* mm, char* dest);
 static void print_char_map(Memory_map* mm);
-/* static int  calc_offset_map(Memory_map* mm, int i); */
-static Addr map_pos_to_addr(Memory_map* mm, int i);
+/* static int  calc_offset_map(Memory_map* mm, int i); */ static Addr map_pos_to_addr(Memory_map* mm, int i);
 static int addr_to_map_pos(Memory_map* mm, Addr a);
 static void coalesce(Memory_map* mm, int ord);
 
@@ -201,7 +200,6 @@ static int find_candidate_position(Memory_map* mm, char c, search_type st) {
 }
 
 static int char_to_order(Memory_map* mm, char c) {
-    /* printf("Char_to_order call: a: %d high_order: %d c: %d\n", (int)'a' , mm->high_order , tolower(c)); */
     int order = (int)'a' + mm->high_order - tolower(c);
     return order;
 }
@@ -346,7 +344,6 @@ int test_get_block() {
     Addr block_200 = get_block(mem_map2, 200);
 
     abbrev_char_map(mem_map2, str2);
-    printf("%s\n", str2);
     success &= strcmp(str2, "abcDeFg") == 0;
     success &= block_200 == NULL; //too big should fail
 
@@ -365,24 +362,21 @@ int test_release_block() {
     //gets
     abbrev_char_map(mem_map1, str1);
     success &= strcmp(str1, "a") == 0;
-    for(int i=0; i<mem_map1->map_size; ++i){
+    int i;
+    for(i = 0; i<mem_map1->map_size; ++i){
         blocks[i] = get_block(mem_map1, 1);
-        /* printf("Giving you block # %d \n", i); */
         assert(blocks[i] != NULL);
     }
     abbrev_char_map(mem_map1, str1);
     //check j's
-    for(int i=0; i<mem_map1->map_size; ++i){
-        /* printf("Got %c \n", str1[i]); */
+    for(i = 0; i<mem_map1->map_size; ++i){
         assert(str1[i]=='K');
     }
 
     //release
-        printf("Releasing..\n");
-    for(int i=0; i<mem_map1->map_size; ++i){
+    for(i = 0; i<mem_map1->map_size; ++i){
         release_block(mem_map1, blocks[i]);
     }
-        printf("Done..\n");
     abbrev_char_map(mem_map1, str1);
     success &= (strcmp(str1, "a") == 0);
     return success;

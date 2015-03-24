@@ -167,7 +167,6 @@ int ackerman(int a, int b) {
 
         if (a == 0){
             result = b + 1;
-            /* printf("DEBUG: Result after inc is %d\n", result); */
         }
         else if (b == 0)
             result = ackerman(a - 1, 1);
@@ -183,9 +182,6 @@ int ackerman(int a, int b) {
         }
 
         my_free(mem);
-    }
-    else{
-            printf("DEBUG: Failed to allocate\n");
     }
 
     return result;
