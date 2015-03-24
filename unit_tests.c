@@ -3,18 +3,19 @@
 #include <stdio.h>
 #include <string.h>
 #include "my_allocator.h"
-#include "linked_list.h"
+#include "memory_map.h"
 
 int main() {
   // if an assert fails, it'll print and throw an abort
-  
+
   // test allocation functions
   assert(test_init() == 1);
   assert(test_release() == 1);
 
-  // test linked list functions
-  assert(test_list_insert() == 1);
-  assert(test_list_remove() == 1);
-  printf("Unit Tests have been run successfully\n");
+  // test memory map functions
+  assert(test_new_memory_map() == 1);
+  assert(test_init_char_map() == 1);
+  assert(test_get_block() == 1);
+  assert(test_release_block() == 1);
   return 1;
 }
