@@ -25,7 +25,7 @@
 #include <ctype.h>
 #include <math.h>
 #include "memory_map.h"
-
+#include <assert.h>
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */
 /*--------------------------------------------------------------------------*/
@@ -51,6 +51,7 @@ static int char_to_order(Memory_map* mm, char c);
 static int calc_char_offset(Memory_map* mm, char c);
 static char calc_order_char(Memory_map* mm, int ord);
 static void abbrev_char_map(Memory_map* mm, char* dest);
+static void print_char_map(Memory_map* mm);
 /* static int  calc_offset_map(Memory_map* mm, int i); */
 static Addr map_pos_to_addr(Memory_map* mm, int i);
 static int addr_to_map_pos(Memory_map* mm, Addr a);
@@ -68,7 +69,7 @@ static int split(Memory_map* mm, int ord);
 Memory_map* new_memory_map(short int bbs, int bc, Addr mp) {
     int ms = calc_map_size(bbs, bc);
     // add one for the null byte at the end of char_map
-    Memory_map* mem_map = (Memory_map*)malloc(sizeof(Memory_map) + ms + 1);
+    Memory_map* mem_map = (Memory_map*)malloc(sizeof(Memory_map) + ms + 1 );
     mem_map->memory_pool = mp;
     mem_map->basic_block_size = bbs;
     mem_map->high_order = floor(log2((double) ms));
@@ -86,14 +87,17 @@ void delete_memory_map(Memory_map* mm) {
 
 
 Addr get_block(Memory_map* mm, int bs) {
-    Addr free_block_loc = NULL;
-    if (bs > mm->byte_count)
-        return NULL;
     //get lowest order free block that can contain bs
+    if (bs > mm->byte_count){
+        return NULL;
+    }
+    int block_count = ceil((double)bs / mm->basic_block_size);
+    Addr free_block_loc = NULL;
     // consider using basic_block_size in this calculation
-    int ord = ceil(log2( (double)bs ));
+    int ord = ceil(log2( block_count ));
     char c = calc_order_char(mm, ord);
     int index = find_candidate_position(mm, c, FREE);
+    assert(index < 8000);
     if (index == -1) {
         index = split(mm, ord + 1);
     }
@@ -102,7 +106,7 @@ Addr get_block(Memory_map* mm, int bs) {
         mm->char_map[index] = reserved_c;
         free_block_loc = map_pos_to_addr(mm, index);
     }
-
+    print_char_map( mm);
     return free_block_loc;
 }
 
@@ -118,7 +122,8 @@ int release_block(Memory_map* mm, Addr addr) {
     char c  = mm->char_map[pos];
     if (isupper(c)) {
         mm->char_map[pos] = tolower(c);
-        coalesce(mm, char_to_order(mm, c) - 1);
+        coalesce(mm, char_to_order(mm, c));
+        print_char_map(mm);
         return 1;
     }
     return 0; //wasn't allocated
@@ -145,6 +150,8 @@ static void init_char_map(Memory_map* mm) {
         char order_char = calc_order_char(mm, order);
         // find the correct position
         int found = find_candidate_position(mm, order_char, EMPTY);
+
+    assert(found < 8000);
         if (found != -1) {
             mm->char_map[found] = order_char;
         }
@@ -156,6 +163,7 @@ static int find_candidate_position(Memory_map* mm, char c, search_type st) {
     int pos = 0;
     while (pos < mm->map_size) {
 
+    assert(pos < 8000);
         char current = mm->char_map[pos];
         // break statements are needed here
         // otherwise cases fall through when the if-conditions are false
@@ -196,6 +204,7 @@ static int find_candidate_position(Memory_map* mm, char c, search_type st) {
 }
 
 static int char_to_order(Memory_map* mm, char c) {
+    /* printf("Char_to_order call: a: %d high_order: %d c: %d\n", (int)'a' , mm->high_order , tolower(c)); */
     int order = (int)'a' + mm->high_order - tolower(c);
     return order;
 }
@@ -218,12 +227,19 @@ static void abbrev_char_map(Memory_map* mm, char* dest) {
     int i;
     memset(dest, 0, mm->map_size);
     for (i = 0; i < mm->map_size; ++i) {
+    assert(i < 8000);
         char c = mm->char_map[i];
         if (c == eps) {
             continue;
         }
         strncat(dest, &c, 1);
     }
+}
+
+static void print_char_map(Memory_map* mm) {
+    char str1[mm->map_size];
+    abbrev_char_map(mm, str1);
+    printf("Current Char Map: %s \n", str1);
 }
 
 static Addr map_pos_to_addr(Memory_map* mm, int i) {
@@ -318,7 +334,7 @@ int test_get_block() {
 
     char str1[mem_map1->map_size];
     abbrev_char_map(mem_map1, str1);
-    success &= strcmp(str1, "Ccb") == 0;
+    success &= strcmp(str1, "Ddcb") == 0;
 
     Addr memory2 = (Addr)malloc(254);
     Memory_map* mem_map2 = new_memory_map(2, 254, memory2);
@@ -329,7 +345,8 @@ int test_get_block() {
     Addr block_200 = get_block(mem_map2, 200);
 
     abbrev_char_map(mem_map2, str2);
-    success &= strcmp(str2, "abCdEfg") == 0;
+    printf("%s\n", str2);
+    success &= strcmp(str2, "abcDeFg") == 0;
     success &= block_200 == NULL; //too big should fail
 
     delete_memory_map(mem_map1);
@@ -337,58 +354,92 @@ int test_get_block() {
     return success;
 }
 
+
 int test_release_block() {
     int success = 1;
-    Addr memory1 = (Addr)malloc(254);
-    Memory_map* mem_map1 = new_memory_map(2, 254, memory1);
-
+    Addr memory1 = (Addr)malloc(2048);
+    Memory_map* mem_map1 = new_memory_map(2, 2048, memory1);
     char str1[mem_map1->map_size];
-    Addr block_15 = get_block(mem_map1, 15);
-    Addr block_4 = get_block(mem_map1, 4);
+    Addr blocks[mem_map1->map_size];
+    //gets
     abbrev_char_map(mem_map1, str1);
-    success &= strcmp(str1, "abCdEfg") == 0;
-    release_block(mem_map1, block_15);
-    release_block(mem_map1, block_4);
-    success &= (release_block(mem_map1, memory1) == 0);//should fail
+    success &= strcmp(str1, "a") == 0;
+    for(int i=0; i<mem_map1->map_size; ++i){
+        blocks[i] = get_block(mem_map1, 1);
+        /* printf("Giving you block # %d \n", i); */
+        assert(blocks[i] != NULL);
+    }
     abbrev_char_map(mem_map1, str1);
-    success &= strcmp(str1, "abcdefg") == 0;
+    //check j's
+    for(int i=0; i<mem_map1->map_size; ++i){
+        /* printf("Got %c \n", str1[i]); */
+        assert(str1[i]=='K');
+    }
 
-    Addr memory2 = (Addr)malloc(128);
-    Memory_map* mem_map2 = new_memory_map(2, 128, memory2);
-    block_15 = get_block(mem_map2, 15);
-
-    char str2[mem_map2->map_size];
-    abbrev_char_map(mem_map2, str2);
-    success &= strcmp(str2, "Ccb") == 0;
-
-    release_block(mem_map2, block_15);
-    abbrev_char_map(mem_map2, str2);
-    success &= strcmp(str2, "a") == 0;
-
-    delete_memory_map(mem_map1);
-    delete_memory_map(mem_map2);
+    //release
+        printf("Releasing..\n");
+    for(int i=0; i<mem_map1->map_size; ++i){
+        release_block(mem_map1, blocks[i]);
+    }
+        printf("Done..\n");
+    abbrev_char_map(mem_map1, str1);
+    success &= (strcmp(str1, "a") == 0);
     return success;
+
 }
+
+/* int test_release_block() { */
+/*     int success = 1; */
+/*     Addr memory1 = (Addr)malloc(254); */
+/*     Memory_map* mem_map1 = new_memory_map(2, 254, memory1); */
+
+/*     char str1[mem_map1->map_size]; */
+/*     Addr block_15 = get_block(mem_map1, 15); */
+/*     Addr block_4 = get_block(mem_map1, 4); */
+/*     abbrev_char_map(mem_map1, str1); */
+/*     success &= strcmp(str1, "abCdEfg") == 0; */
+/*     release_block(mem_map1, block_15); */
+/*     release_block(mem_map1, block_4); */
+/*     success &= (release_block(mem_map1, memory1) == 0);//should fail */
+/*     abbrev_char_map(mem_map1, str1); */
+/*     success &= strcmp(str1, "abcdefg") == 0; */
+
+/*     Addr memory2 = (Addr)malloc(128); */
+/*     Memory_map* mem_map2 = new_memory_map(2, 128, memory2); */
+/*     block_15 = get_block(mem_map2, 15); */
+
+/*     char str2[mem_map2->map_size]; */
+/*     abbrev_char_map(mem_map2, str2); */
+/*     success &= strcmp(str2, "Ccb") == 0; */
+
+/*     release_block(mem_map2, block_15); */
+/*     abbrev_char_map(mem_map2, str2); */
+/*     success &= strcmp(str2, "a") == 0; */
+
+/*     delete_memory_map(mem_map1); */
+/*     delete_memory_map(mem_map2); */
+/*     return success; */
+/* } */
 /*
-int test_coalesce() {
-    int success = 1;
-    Addr memory1 = malloc(128);
-    Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
-    Addr block_ = get_block
-    char str1[mem_map1->map_size];
-    coalesce(mem_map1, 3);
-    abbrev_char_map(mem_map1, str1);
-    //success &= strcmp(str1, "ccb") == 0;
-    return success;
+   int test_coalesce() {
+   int success = 1;
+   Addr memory1 = malloc(128);
+   Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
+   Addr block_ = get_block
+   char str1[mem_map1->map_size];
+   coalesce(mem_map1, 3);
+   abbrev_char_map(mem_map1, str1);
+//success &= strcmp(str1, "ccb") == 0;
+return success;
 }
 
 int test_split() {
-    int success = 1;
-    Addr memory1 = malloc(128);
-    Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
-    split(mem_map1, 1);
-    char str1[mem_map1->map_size];
-    abbrev_char_map(mem_map1, str1);
-    success &= strcmp(str1, "ggfedcb") == 0;
-    return success;
+int success = 1;
+Addr memory1 = malloc(128);
+Memory_map* mem_map1 = new_memory_map(2, 128, memory1);
+split(mem_map1, 1);
+char str1[mem_map1->map_size];
+abbrev_char_map(mem_map1, str1);
+success &= strcmp(str1, "ggfedcb") == 0;
+return success;
 }*/

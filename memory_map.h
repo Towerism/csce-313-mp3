@@ -72,7 +72,7 @@ int test_new_memory_map();
 int test_init_char_map();
 int test_get_block();
 int test_release_block();
-int test_coalesce();
-int test_split();
+/* int test_coalesce(); */
+/* int test_split(); */
 
 #endif

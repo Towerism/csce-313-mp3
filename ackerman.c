@@ -1,4 +1,4 @@
-/* 
+/*
     File: ackerman.c
 
     Author: R. Bettati
@@ -6,8 +6,8 @@
             Texas A&M University
     Date  : 08/02/09
 
-    This file implements the function "ackerman(n,m)", which is used 
-    by the "memtest" program in MP1. 
+    This file implements the function "ackerman(n,m)", which is used
+    by the "memtest" program in MP1.
 
 */
 
@@ -16,7 +16,7 @@
 /*--------------------------------------------------------------------------*/
 
     /* -- (none) -- */
-    
+
 /*--------------------------------------------------------------------------*/
 /* INCLUDES */
 /*--------------------------------------------------------------------------*/
@@ -30,7 +30,7 @@
 #include "my_allocator.h"
 
 /*--------------------------------------------------------------------------*/
-/* DATA STRUCTURES */ 
+/* DATA STRUCTURES */
 /*--------------------------------------------------------------------------*/
 
     /* -- (none) -- */
@@ -66,12 +66,12 @@ unsigned long int num_allocations;
 extern void ackerman_main() {
     /* This is function repeatedly asks the user for the two parameters
        "n" and "m" to pass to the ackerman function, and invokes the function.
-       Before and after the invocation of the ackerman function, the 
+       Before and after the invocation of the ackerman function, the
        value of the wallclock is taken, and the elapsed time for the computation
        of the ackerman function is output.
        */
 
-    int n, m; /* Parameter for the invocation of the Ackerman function. */ 
+    int n, m; /* Parameter for the invocation of the Ackerman function. */
 
     struct timeval tp_start; /* Used to compute elapsed time. */
     struct timeval tp_end;
@@ -97,7 +97,7 @@ extern void ackerman_main() {
         assert(gettimeofday(&tp_start, 0) == 0);
         /* Assert aborts if there is a problem with gettimeofday.
            We rather die of a horrible death rather than returning
-           invalid timing information! 
+           invalid timing information!
            */
 
         int result = ackerman(n, m);
@@ -105,13 +105,13 @@ extern void ackerman_main() {
         assert(gettimeofday(&tp_end, 0) == 0);
         /* (see above) */
 
-        printf("Result of ackerman(%d, %d): %d\n", n, m, result); 
+        printf("Result of ackerman(%d, %d): %d\n", n, m, result);
 
-        printf("Time taken for computation : "); 
+        printf("Time taken for computation : ");
         print_time_diff(&tp_start, &tp_end);
         printf("\n");
 
-        printf("Number of allocate/free cycles: %lu\n\n\n", num_allocations); 
+        printf("Number of allocate/free cycles: %lu\n\n\n", num_allocations);
     }
 
     printf("Reached end of Ackerman program. Thank you for using it.\n");
@@ -140,7 +140,7 @@ void print_time_diff(struct timeval * tp1, struct timeval * tp2) {
 int ackerman(int a, int b) {
     /* This is the implementation of the Ackerman function. The function itself is very
        function is very simple (just two recursive calls). We use it to exercise the
-       memory allocator (see "my_alloc" and "my_free"). 
+       memory allocator (see "my_alloc" and "my_free").
        For this, there are additional calls to "gettimeofday" to measure the elapsed
        time.
        */
@@ -165,8 +165,10 @@ int ackerman(int a, int b) {
         c = rand() % 128;
         memset(mem, c, to_alloc * sizeof(char));
 
-        if (a == 0)
+        if (a == 0){
             result = b + 1;
+            /* printf("DEBUG: Result after inc is %d\n", result); */
+        }
         else if (b == 0)
             result = ackerman(a - 1, 1);
         else
@@ -182,7 +184,10 @@ int ackerman(int a, int b) {
 
         my_free(mem);
     }
-    
+    else{
+            /* printf("DEBUG: Failed to allocate\n"); */
+    }
+
     return result;
 }
 

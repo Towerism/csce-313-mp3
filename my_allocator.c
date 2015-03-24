@@ -67,7 +67,7 @@ unsigned int init_allocator(unsigned int _basic_block_size, unsigned int _length
     }
 
     memory_pool = malloc(_length);
-    Addr buffer = malloc(1000);
+    Addr buffer = malloc(1000000);
     b_b_s = _basic_block_size;
     mem_map = new_memory_map(b_b_s, _length, memory_pool);
     if(errno)
@@ -95,6 +95,7 @@ extern Addr my_malloc(unsigned int _length) {
 }
 
 extern int my_free(Addr _a) {
+
     release_block(mem_map, _a);
     return 0;
 }
