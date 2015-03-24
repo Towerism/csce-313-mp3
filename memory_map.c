@@ -352,7 +352,6 @@ int test_release_block() {
     success &= (release_block(mem_map1, memory1) == 0);//should fail
     abbrev_char_map(mem_map1, str1);
     success &= strcmp(str1, "abcdefg") == 0;
-    delete_memory_map(mem_map1);
 
     Addr memory2 = (Addr)malloc(128);
     Memory_map* mem_map2 = new_memory_map(2, 128, memory2);
