@@ -20,7 +20,7 @@ memtest: memtest.o ackerman.o my_allocator.o memory_map.o
 unit_tests.o: my_allocator.h memory_map.h
 	gcc $(CFLAGS) unit_tests.c
 unit_tests: unit_tests.o my_allocator.o memory_map.o
-	gcc -o unit_tests unit_tests.o my_allocator.o memory_map.o 
+	gcc -o unit_tests $(LFLAGS) unit_tests.o my_allocator.o memory_map.o 
 
 .PHONY: clean
 clean:
